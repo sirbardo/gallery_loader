@@ -45,10 +45,16 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initGalleryMethod() async {
-    var images;
+    final images = <String>[];
     try {
       print("Trying...");
-      images = await GalleryLoader.getGalleryImages(total: 1);
+      images
+        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
+        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
+        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
+        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
+        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
+        ..addAll(await GalleryLoader.getGalleryImages(total: 1));
       print("Done.");
     } on PlatformException catch (e) {
       print(e);
@@ -89,12 +95,11 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: ListView(
-            children: <Widget>[
-              Text('Running on: $_platformVersion\n'),
-              if (_permissioned && _images != null)
-                for (var image in _images) Image.file(File(image)),
-            ],
+          child: ListView.builder(
+            itemBuilder: (context, index) => FutureBuilder<String>(
+                future: GalleryLoader.getGalleryImages(total: 1)
+                    .then((el) => el.first),
+                builder: (con, snap) => Image.file(File(snap.data))),
           ),
         ),
       ),

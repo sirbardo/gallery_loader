@@ -14,6 +14,11 @@ class GalleryLoader {
     return images;
   }
 
+  static Future<int> getNumberOfImages() async {
+    final int numberOfImages = await _channel.invokeMethod('getNumberOfImages');
+    return numberOfImages;
+  }
+
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
     return version;

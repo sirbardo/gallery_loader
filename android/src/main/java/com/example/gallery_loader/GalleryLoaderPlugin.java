@@ -30,7 +30,14 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
 
   @Override
   public void onMethodCall(MethodCall call, Result result) {
-    if (call.method.equals("getPlatformVersion")) {
+
+    if (call.method.equals("getNumberOfImages")){
+        String[] projection = { MediaStore.MediaColumns.DATA };
+        Uri uri = android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+        cursor = activity.getContentResolver().query(uri, projection, null, null, null);
+        result.success(cursor.getCount());
+    }
+    else if (call.method.equals("getPlatformVersion")) {
       result.success("Android " + android.os.Build.VERSION.RELEASE);
     } else if (call.method.equals("getGalleryImages")) {
       int nToRead = call.argument("nToRead");
@@ -40,7 +47,7 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
         String[] projection = { MediaStore.MediaColumns.DATA, MediaStore.MediaColumns.DATE_ADDED };
 
         Uri uri = android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-        Cursor cursor = activity.getContentResolver().query(uri, projection, null, null,
+        cursor = activity.getContentResolver().query(uri, projection, null, null,
             MediaStore.MediaColumns.DATE_ADDED + "  desc");
         Log.d("Channel", uri.toString());
         Log.d("Channel", cursor.toString());
