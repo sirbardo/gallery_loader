@@ -15,75 +15,48 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
   List<String> _images;
+  int _totalImages = 0;
   bool _permissioned = false;
 
   @override
   void initState() {
     super.initState();
-    initPlatformState();
     initPermissions();
   }
 
   Future<void> initPermissions() async {
+    print("Boutta start initpermissions");
+    PermissionStatus prova = await SimplePermissions.getPermissionStatus(
+        Permission.ReadExternalStorage);
+    print("Ok, we managed to get status: it's $prova");
     bool permitted =
         await SimplePermissions.checkPermission(Permission.ReadExternalStorage);
+    print("Done with permissions yo");
     if (!permitted) {
+      print("Boutta ask for permission yo");
       var permissionStatus = await SimplePermissions.requestPermission(
           Permission.ReadExternalStorage);
       print(permissionStatus);
       if (permissionStatus == PermissionStatus.authorized) {
         permitted = true;
-        initGalleryMethod();
       }
-    } else {
-      initGalleryMethod();
     }
-
+    print("Boutta set permission state to $permitted");
     setState(() {
       _permissioned = permitted;
     });
+    getImageCount();
   }
 
-  Future<void> initGalleryMethod() async {
-    final images = <String>[];
-    try {
-      print("Trying...");
-      images
-        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
-        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
-        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
-        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
-        ..addAll(await GalleryLoader.getGalleryImages(total: 1))
-        ..addAll(await GalleryLoader.getGalleryImages(total: 1));
-      print("Done.");
-    } on PlatformException catch (e) {
-      print(e);
-    }
-
-    print("About to set state.");
-    print(images);
+  Future<List<String>> getImages({total: 1}) async {
+      final images = await GalleryLoader.getGalleryImages(total: total);
+      return images;
+   }
+  
+  Future<void> getImageCount() async{
+    int totalImages = await GalleryLoader.getNumberOfImages();
     setState(() {
-      _images = images;
-    });
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    try {
-      platformVersion = await GalleryLoader.platformVersion;
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
+      _totalImages = totalImages;
     });
   }
 
@@ -95,12 +68,36 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: ListView.builder(
-            itemBuilder: (context, index) => FutureBuilder<String>(
-                future: GalleryLoader.getGalleryImages(total: 1)
-                    .then((el) => el.first),
-                builder: (con, snap) => Image.file(File(snap.data))),
-          ),
+          child: 
+             (_permissioned && _totalImages != 0) ? ListView.builder(
+              itemCount: _totalImages,
+              itemBuilder: (context, index){
+                   return FutureBuilder(
+                  future: getImages(total: 1),
+                  builder: (context, snapshot) {
+                    switch (snapshot.connectionState) {
+                      case ConnectionState.none:
+                      case ConnectionState.waiting:
+                      case ConnectionState.active:
+                      return Align(alignment: Alignment.center, child: CircularProgressIndicator(),);
+                      case ConnectionState.done:
+                        if(snapshot.hasError) {
+                          return Text('Error: ${snapshot.error}');
+                        } else {
+                          print(snapshot.data);
+                          if (snapshot.data.length == 0)
+                            return Container();
+                          var pageData = snapshot.data as List<String>;
+                          if (pageData.first == "" || pageData.length == 0)
+                            return Align(alignment: Alignment.center, child: CircularProgressIndicator());
+                          return Image.file(File(pageData.first));
+                        }
+                    }
+                  });
+              },
+            )
+            :
+            CircularProgressIndicator()
         ),
       ),
     );

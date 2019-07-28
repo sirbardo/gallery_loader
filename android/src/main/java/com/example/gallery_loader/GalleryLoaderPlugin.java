@@ -11,7 +11,6 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.net.Uri;
 import android.database.Cursor;
-
 /** GalleryLoaderPlugin */
 public class GalleryLoaderPlugin implements MethodCallHandler {
   /** Plugin registration. */
@@ -41,7 +40,7 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
       result.success("Android " + android.os.Build.VERSION.RELEASE);
     } else if (call.method.equals("getGalleryImages")) {
       int nToRead = call.argument("nToRead");
-       ArrayList<String> images = new ArrayList<String>();
+      ArrayList<String> images = new ArrayList<String>();
       if (cursor == null) {
 
         String[] projection = { MediaStore.MediaColumns.DATA, MediaStore.MediaColumns.DATE_ADDED };
@@ -56,19 +55,27 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
         int i = 0;
         while (i < nToRead && cursor.moveToNext()) {
           i++;
+          Log.d("Channel", "loading next image first time");
           String absolutePathOfImage = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA));
           images.add(absolutePathOfImage);
+          Log.d("Channel", "Returning first time: " + absolutePathOfImage);
         }
+        Log.d("Channel", "About to return first");
+        result.success(images);
+        Log.d("Channel", "After success");
       }
       else {
         int i = 0;
         while (i < nToRead && cursor.moveToNext()) {
           i++;
+          Log.d("Channel", "loading next image");
           String absolutePathOfImage = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA));
           images.add(absolutePathOfImage);
+          Log.d("Channel", "Returning: " + absolutePathOfImage);
         }
+        Log.d("Channel", "About to return");
+        result.success(images);
       }
-      result.success(images);
     } else {
       result.notImplemented();
     }
