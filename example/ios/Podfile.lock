@@ -1,0 +1,28 @@
+PODS:
+  - Flutter (1.0.0)
+  - gallery_loader (0.0.1):
+    - Flutter
+  - "permission_handler (3.2.1+1)":
+    - Flutter
+
+DEPENDENCIES:
+  - Flutter (from `.symlinks/flutter/ios`)
+  - gallery_loader (from `.symlinks/plugins/gallery_loader/ios`)
+  - permission_handler (from `.symlinks/plugins/permission_handler/ios`)
+
+EXTERNAL SOURCES:
+  Flutter:
+    :path: ".symlinks/flutter/ios"
+  gallery_loader:
+    :path: ".symlinks/plugins/gallery_loader/ios"
+  permission_handler:
+    :path: ".symlinks/plugins/permission_handler/ios"
+
+SPEC CHECKSUMS:
+  Flutter: 58dd7d1b27887414a370fcccb9e645c08ffd7a6a
+  gallery_loader: 38754a47c29c00d3612f61ac6bb4b6e8d14551a1
+  permission_handler: 6a1b2f94f866da8bd19fa67f3c8f4b9f38580efb
+
+PODFILE CHECKSUM: b6a0a141693093b304368d08511b46cf3d1d0ac5
+
+COCOAPODS: 1.7.5

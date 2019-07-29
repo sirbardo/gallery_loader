@@ -17,7 +17,9 @@ class GalleryLoader {
   }
 
   static Future<int> getNumberOfImages() async {
+    print("Asking for number of images");
     final int numberOfImages = await _channel.invokeMethod('getNumberOfImages');
+    print("OS returned $numberOfImages number of images");
     return numberOfImages;
   }
 

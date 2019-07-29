@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/services.dart';
 import 'package:gallery_loader/gallery_loader.dart';
-import 'package:simple_permissions/simple_permissions.dart';
 import 'dart:io';
+import 'package:permission_handler/permission_handler.dart';
 
 void main() => runApp(MyApp());
 
@@ -26,18 +26,19 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> initPermissions() async {
     print("Boutta start initpermissions");
-    PermissionStatus prova = await SimplePermissions.getPermissionStatus(
-        Permission.ReadExternalStorage);
+    PermissionGroup group = Platform.isIOS ? PermissionGroup.photos : PermissionGroup.storage;
+    PermissionStatus prova = await PermissionHandler().checkPermissionStatus(
+        group);
     print("Ok, we managed to get status: it's $prova");
     bool permitted =
-        await SimplePermissions.checkPermission(Permission.ReadExternalStorage);
+        (await PermissionHandler().checkPermissionStatus(group)) == PermissionStatus.granted;
     print("Done with permissions yo");
     if (!permitted) {
       print("Boutta ask for permission yo");
-      var permissionStatus = await SimplePermissions.requestPermission(
-          Permission.ReadExternalStorage);
+      var permissionStatus = (await PermissionHandler().requestPermissions(
+          [group]))[group];
       print(permissionStatus);
-      if (permissionStatus == PermissionStatus.authorized) {
+      if (permissionStatus == PermissionStatus.granted) {
         permitted = true;
       }
     }
@@ -48,8 +49,10 @@ class _MyAppState extends State<MyApp> {
     getImageCount();
   }
 
-  Future<List<String>> getImages({total: 1}) async {
-      final images = await GalleryLoader.getGalleryImages(total: total);
+  Future<List<String>> getImages({total: 1, startingIndex: 0}) async {
+      print("Asking OS to get some images");
+      final images = await GalleryLoader.getGalleryImages(total: total, startingIndex: startingIndex);
+      print("OS Answered our question with $images");
       return images;
    }
   
@@ -73,7 +76,7 @@ class _MyAppState extends State<MyApp> {
               itemCount: _totalImages,
               itemBuilder: (context, index){
                    return FutureBuilder(
-                  future: getImages(total: 1),
+                  future: getImages(total: 1, startingIndex: index),
                   builder: (context, snapshot) {
                     switch (snapshot.connectionState) {
                       case ConnectionState.none:
