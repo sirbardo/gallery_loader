@@ -31,10 +31,14 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
         else if (call.method == "getGalleryImages") {
             var startingIndex : Int = 0
             var nToRead : Int = 1
+            var targetWidth : Double = 0.0;
+            var targetHeight : Double = 0.0;
             if let args = call.arguments {
                 if let myArgs = args as? [String: Any]{
                     nToRead = myArgs["nToRead"] != nil ? myArgs["nToRead"] as! Int : 1
                     startingIndex = myArgs["startingIndex"] != nil ? myArgs["startingIndex"] as! Int : 0
+                    targetWidth = myArgs["targetWidth"] != nil ? myArgs["targetWidth"] as! Double : 0.0
+                    targetHeight = myArgs["targetHeight"] != nil ? myArgs["targetHeight"] as! Double : 0.0
                 }
             } else {
                 nToRead = 1;
@@ -61,8 +65,15 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                     let asset = fetchResult.object(at: index) as PHAsset
                     let localIdentifier = asset.localIdentifier
                     savedLocalIdentifiers.append(localIdentifier)
-                    
-                    imgManager.requestImage(for: asset, targetSize: PHImageManagerMaximumSize, contentMode: PHImageContentMode.aspectFit, options: PHImageRequestOptions(), resultHandler:{(image, info) in
+                    var size : CGSize;
+                    if (targetWidth != 0 && targetHeight != 0){
+                        size = CGSize(width: targetWidth, height: targetHeight)
+                    }
+                    else {
+                        size = PHImageManagerMaximumSize
+                    }
+
+                    imgManager.requestImage(for: asset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: PHImageRequestOptions(), resultHandler:{(image, info) in
                         
                         if image != nil {
                             var imageData: Data?
@@ -73,7 +84,7 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                                 imageData = UIImagePNGRepresentation(image!)
                             }
                             let guid = ProcessInfo.processInfo.globallyUniqueString;
-                            let tmpFile = String(format: "image_picker_%@.jpg", guid);
+                            let tmpFile = String(format: "gallery_loader%@.jpg", guid);
                             let tmpDirectory = NSTemporaryDirectory();
                             let tmpPath = (tmpDirectory as NSString).appendingPathComponent(tmpFile);
                             if(FileManager.default.createFile(atPath: tmpPath, contents: imageData, attributes: [:])) {

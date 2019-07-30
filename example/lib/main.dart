@@ -49,9 +49,9 @@ class _MyAppState extends State<MyApp> {
     getImageCount();
   }
 
-  Future<List<String>> getImages({total: 1, startingIndex: 0}) async {
+  Future<List<String>> getImages({total: 1, startingIndex: 0, width: 0.0, height: 0.0}) async {
       print("Asking OS to get some images");
-      final images = await GalleryLoader.getGalleryImages(total: total, startingIndex: startingIndex);
+      final images = await GalleryLoader.getGalleryImages(total: total, startingIndex: startingIndex, targetWidth: width, targetHeight: height);
       print("OS Answered our question with $images");
       return images;
    }
@@ -76,7 +76,7 @@ class _MyAppState extends State<MyApp> {
               itemCount: _totalImages,
               itemBuilder: (context, index){
                    return FutureBuilder(
-                  future: getImages(total: 1, startingIndex: index),
+                  future: getImages(total: 1, startingIndex: index, width: 500.0, height: 500.0),
                   builder: (context, snapshot) {
                     switch (snapshot.connectionState) {
                       case ConnectionState.none:

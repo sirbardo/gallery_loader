@@ -5,13 +5,22 @@ import 'package:flutter/services.dart';
 class GalleryLoader {
   static const MethodChannel _channel = const MethodChannel('gallery_loader');
 
-  static Future<List<String>> getGalleryImages(
-      {int total: 5, int startingIndex: 0}) async {
+  static Future<List<String>> getGalleryImages({
+    int total: 5,
+    int startingIndex: 0,
+    double targetWidth: 0.0,
+    double targetHeight: 0.0,
+  }) async {
     print("We up in here");
     //final images = List<String>.from(await _channel.invokeMethod(
     //    'getGalleryImages', <String, dynamic>{'nToRead': total}));
-    final images = await _channel.invokeListMethod<String>('getGalleryImages',
-        <String, dynamic>{'nToRead': total, 'startingIndex': startingIndex});
+    final images = await _channel
+        .invokeListMethod<String>('getGalleryImages', <String, dynamic>{
+      'nToRead': total,
+      'startingIndex': startingIndex,
+      'targetWidth' : targetWidth,
+      'targetHeight' : targetHeight,
+    });
     print("We out of here");
     return images;
   }
