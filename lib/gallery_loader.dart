@@ -30,11 +30,6 @@ class GalleryLoader {
     return numberOfImages;
   }
 
-  static Future<String> restartCursor() async {
-    String state = await _channel.invokeMethod('restartCursor');
-    return state;
-  }
-
   static Future<String> get platformVersion async {
     final String version = await _channel.invokeMethod('getPlatformVersion');
     return version;
