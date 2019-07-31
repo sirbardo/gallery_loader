@@ -34,7 +34,7 @@ Add these lines to your Info.plist
 
 ### Using the plugin
 
-Check the example app, but the main api is pretty obvious from this snippet:
+Check the example app, but the main API is basically what you see in this snippet:
 
 ```dart
   Future<List<String>> getImages(
