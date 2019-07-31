@@ -8,12 +8,10 @@ class GalleryLoader {
   static Future<List<String>> getGalleryImages({
     int total: 5,
     int startingIndex: 0,
-    double targetWidth: 0.0,
-    double targetHeight: 0.0,
+    int targetWidth: 0,
+    int targetHeight: 0,
   }) async {
-    print("We up in here");
-    //final images = List<String>.from(await _channel.invokeMethod(
-    //    'getGalleryImages', <String, dynamic>{'nToRead': total}));
+
     final images = await _channel
         .invokeListMethod<String>('getGalleryImages', <String, dynamic>{
       'nToRead': total,
@@ -21,7 +19,7 @@ class GalleryLoader {
       'targetWidth' : targetWidth,
       'targetHeight' : targetHeight,
     });
-    print("We out of here");
+    print("Returned $images");
     return images;
   }
 

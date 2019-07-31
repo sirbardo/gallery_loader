@@ -26,17 +26,18 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> initPermissions() async {
     print("Boutta start initpermissions");
-    PermissionGroup group = Platform.isIOS ? PermissionGroup.photos : PermissionGroup.storage;
-    PermissionStatus prova = await PermissionHandler().checkPermissionStatus(
-        group);
+    PermissionGroup group =
+        Platform.isIOS ? PermissionGroup.photos : PermissionGroup.storage;
+    PermissionStatus prova =
+        await PermissionHandler().checkPermissionStatus(group);
     print("Ok, we managed to get status: it's $prova");
-    bool permitted =
-        (await PermissionHandler().checkPermissionStatus(group)) == PermissionStatus.granted;
+    bool permitted = (await PermissionHandler().checkPermissionStatus(group)) ==
+        PermissionStatus.granted;
     print("Done with permissions yo");
     if (!permitted) {
       print("Boutta ask for permission yo");
-      var permissionStatus = (await PermissionHandler().requestPermissions(
-          [group]))[group];
+      var permissionStatus =
+          (await PermissionHandler().requestPermissions([group]))[group];
       print(permissionStatus);
       if (permissionStatus == PermissionStatus.granted) {
         permitted = true;
@@ -49,14 +50,17 @@ class _MyAppState extends State<MyApp> {
     getImageCount();
   }
 
-  Future<List<String>> getImages({total: 1, startingIndex: 0, width: 0.0, height: 0.0}) async {
-      print("Asking OS to get some images");
-      final images = await GalleryLoader.getGalleryImages(total: total, startingIndex: startingIndex, targetWidth: width, targetHeight: height);
-      print("OS Answered our question with $images");
-      return images;
-   }
-  
-  Future<void> getImageCount() async{
+  Future<List<GalleryImage>> getImages(
+      {total: 1, startingIndex: 0, width: 0.0, height: 0.0}) async {
+    final images = await GalleryLoader.getGalleryImages(
+        total: total,
+        startingIndex: startingIndex,
+        targetWidth: width,
+        targetHeight: height);
+    return images;
+  }
+
+  Future<void> getImageCount() async {
     int totalImages = await GalleryLoader.getNumberOfImages();
     setState(() {
       _totalImages = totalImages;
@@ -71,37 +75,49 @@ class _MyAppState extends State<MyApp> {
           title: const Text('Plugin example app'),
         ),
         body: Center(
-          child: 
-             (_permissioned && _totalImages != 0) ? ListView.builder(
-              itemCount: _totalImages,
-              itemBuilder: (context, index){
-                   return FutureBuilder(
-                  future: getImages(total: 1, startingIndex: index, width: 500.0, height: 500.0),
-                  builder: (context, snapshot) {
-                    switch (snapshot.connectionState) {
-                      case ConnectionState.none:
-                      case ConnectionState.waiting:
-                      case ConnectionState.active:
-                      return Align(alignment: Alignment.center, child: CircularProgressIndicator(),);
-                      case ConnectionState.done:
-                        if(snapshot.hasError) {
-                          return Text('Error: ${snapshot.error}');
-                        } else {
-                          print(snapshot.data);
-                          if (snapshot.data.length == 0)
-                            return Container();
-                          var pageData = snapshot.data as List<String>;
-                          if (pageData.first == "" || pageData.length == 0)
-                            return Align(alignment: Alignment.center, child: CircularProgressIndicator());
-                          return Image.file(File(pageData.first));
-                        }
-                    }
-                  });
-              },
-            )
-            :
-            CircularProgressIndicator()
-        ),
+            child: (_permissioned && _totalImages != 0)
+                ? ListView.builder(
+                    itemCount: _totalImages,
+                    itemBuilder: (context, index) {
+                      return FutureBuilder(
+                          future: getImages(
+                              total: 1,
+                              startingIndex: index,
+                              width: 200.0,
+                              height: 200.0),
+                          builder: (context, snapshot) {
+                            switch (snapshot.connectionState) {
+                              case ConnectionState.none:
+                              case ConnectionState.waiting:
+                              case ConnectionState.active:
+                                return Align(
+                                  alignment: Alignment.center,
+                                  child: CircularProgressIndicator(),
+                                );
+                              case ConnectionState.done:
+                                if (snapshot.hasError) {
+                                  return Text('Error: ${snapshot.error}');
+                                } else {
+                                  print(snapshot.data);
+                                  if (snapshot.data.length == 0)
+                                    return Container();
+                                  var pageData =
+                                      snapshot.data as List<GalleryImage>;
+                                  if (pageData.first.fullSize == "" ||
+                                      pageData.length == 0)
+                                    return Align(
+                                        alignment: Alignment.center,
+                                        child: CircularProgressIndicator());
+                                  return Column(children: <Widget>[
+                                    Image.file(File(pageData.first.fullSize)),
+                                    Image.file(File(pageData.first.resized)),
+                                  ]);
+                                }
+                            }
+                          });
+                    },
+                  )
+                : CircularProgressIndicator()),
       ),
     );
   }
