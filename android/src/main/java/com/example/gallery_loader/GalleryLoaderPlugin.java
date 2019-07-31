@@ -1,6 +1,10 @@
 package com.example.gallery_loader;
 
+import java.lang.Math;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.UUID;
 import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
@@ -11,6 +15,9 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.net.Uri;
 import android.database.Cursor;
+import android.graphics.BitmapFactory;
+import android.graphics.Bitmap;
+import android.os.Environment;
 
 /** GalleryLoaderPlugin */
 public class GalleryLoaderPlugin implements MethodCallHandler {
@@ -49,18 +56,59 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
     } else if (call.method.equals("getGalleryImages")) {
       int nToRead = call.argument("nToRead");
       int startingIndex = call.argument("startingIndex");
+      Integer targetWidth = call.argument("targetWidth");
+      Integer targetHeight = call.argument("targetHeight");
+      if (targetWidth == null)
+        targetWidth = 0;
+      if (targetHeight == null)
+        targetHeight = 0;
+
       ArrayList<String> images = new ArrayList<String>();
-      String[] projection = { MediaStore.MediaColumns.DATA, MediaStore.MediaColumns.DATE_ADDED };
 
       Uri uri = android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+      String[] projection = { MediaStore.MediaColumns.DATA };
       cursor = activity.getContentResolver().query(uri, projection, null, null,
           MediaStore.MediaColumns.DATE_ADDED + "  desc");
-      cursor.moveToPosition(startingIndex-1);
+      cursor.moveToPosition(startingIndex - 1);
       int i = 0;
       while (i < nToRead && cursor.moveToNext()) {
         i++;
         String absolutePathOfImage = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA));
-        images.add(absolutePathOfImage);
+        if (targetWidth == 0 || targetHeight == 0) {
+          images.add(absolutePathOfImage);
+        } else {
+          Bitmap original = BitmapFactory.decodeFile(absolutePathOfImage);
+          float originalWidth = original.getWidth();
+          float originalHeight = original.getHeight();
+
+          /*
+          if (targetWidth > targetHeight) {
+            float scale = originalWidth / targetWidth;
+            targetHeight = Math.round(((float) targetHeight) * scale);
+          } else {
+            float scale = originalHeight / targetHeight;
+            targetWidth = Math.round(((float) targetWidth) * scale);
+          }
+          */
+
+          Bitmap out = Bitmap.createScaledBitmap(original, targetWidth, targetHeight, false);
+
+          File outputDir = activity.getCacheDir();
+          String finalPath = "resize" + UUID.randomUUID().toString() +  ".jpg";
+          File outputFile;
+          FileOutputStream fOut;
+          try {
+            outputFile = new File(outputDir, finalPath);
+            fOut = new FileOutputStream(outputFile);
+            out.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
+            fOut.flush();
+            fOut.close();
+            images.add(outputFile.getAbsolutePath());
+          } catch (Exception e) {
+            Log.d("GalleryImage", "Exception in file compress", e);
+          }
+
+        }
       }
       result.success(images);
       /*

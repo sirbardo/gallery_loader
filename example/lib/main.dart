@@ -50,8 +50,8 @@ class _MyAppState extends State<MyApp> {
     getImageCount();
   }
 
-  Future<List<GalleryImage>> getImages(
-      {total: 1, startingIndex: 0, width: 0.0, height: 0.0}) async {
+  Future<List<String>> getImages(
+      {total: 1, startingIndex: 0, width: 0, height: 0}) async {
     final images = await GalleryLoader.getGalleryImages(
         total: total,
         startingIndex: startingIndex,
@@ -83,8 +83,8 @@ class _MyAppState extends State<MyApp> {
                           future: getImages(
                               total: 1,
                               startingIndex: index,
-                              width: 200.0,
-                              height: 200.0),
+                              width: 200,
+                              height: 200),
                           builder: (context, snapshot) {
                             switch (snapshot.connectionState) {
                               case ConnectionState.none:
@@ -102,15 +102,14 @@ class _MyAppState extends State<MyApp> {
                                   if (snapshot.data.length == 0)
                                     return Container();
                                   var pageData =
-                                      snapshot.data as List<GalleryImage>;
-                                  if (pageData.first.fullSize == "" ||
+                                      snapshot.data as List<String>;
+                                  if (pageData.first == "" ||
                                       pageData.length == 0)
                                     return Align(
                                         alignment: Alignment.center,
                                         child: CircularProgressIndicator());
                                   return Column(children: <Widget>[
-                                    Image.file(File(pageData.first.fullSize)),
-                                    Image.file(File(pageData.first.resized)),
+                                    Image.file(File(pageData.first)),
                                   ]);
                                 }
                             }
