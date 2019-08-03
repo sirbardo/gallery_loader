@@ -13,8 +13,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  List<String> _images;
   int _totalImages = 0;
   bool _permissioned = false;
 
@@ -25,17 +23,13 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initPermissions() async {
-    print("Boutta start initpermissions");
     PermissionGroup group =
         Platform.isIOS ? PermissionGroup.photos : PermissionGroup.storage;
     PermissionStatus prova =
         await PermissionHandler().checkPermissionStatus(group);
-    print("Ok, we managed to get status: it's $prova");
     bool permitted = (await PermissionHandler().checkPermissionStatus(group)) ==
         PermissionStatus.granted;
-    print("Done with permissions yo");
     if (!permitted) {
-      print("Boutta ask for permission yo");
       var permissionStatus =
           (await PermissionHandler().requestPermissions([group]))[group];
       print(permissionStatus);
@@ -43,28 +37,10 @@ class _MyAppState extends State<MyApp> {
         permitted = true;
       }
     }
-    print("Boutta set permission state to $permitted");
     setState(() {
       _permissioned = permitted;
     });
-    getImageCount();
-  }
-
-  Future<List<String>> getImages(
-      {total: 1, startingIndex: 0, width: 0, height: 0}) async {
-    final images = await GalleryLoader.getGalleryImages(
-        total: total,
-        startingIndex: startingIndex,
-        targetWidth: width,
-        targetHeight: height);
-    return images;
-  }
-
-  Future<void> getImageCount() async {
-    int totalImages = await GalleryLoader.getNumberOfImages();
-    setState(() {
-      _totalImages = totalImages;
-    });
+    _totalImages = await GalleryLoader.getNumberOfImages();
   }
 
   @override
@@ -80,11 +56,10 @@ class _MyAppState extends State<MyApp> {
                     itemCount: _totalImages,
                     itemBuilder: (context, index) {
                       return FutureBuilder(
-                          future: getImages(
+                          future: GalleryLoader.getThumbnails(
                               total: 1,
                               startingIndex: index,
-                              width: 200,
-                              height: 200),
+                          ),
                           builder: (context, snapshot) {
                             switch (snapshot.connectionState) {
                               case ConnectionState.none:
