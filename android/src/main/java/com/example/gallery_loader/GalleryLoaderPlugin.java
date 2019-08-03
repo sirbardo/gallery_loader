@@ -93,7 +93,7 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
       if (targetWidth == 0 || targetHeight == 0) {
         Bitmap original = BitmapFactory.decodeFile(absolutePathOfImage);
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        original.compress(CompressFormat.JPEG, 70, stream);
+        original.compress(Bitmap.CompressFormat.JPEG, 70, stream);
         images.add(stream.toByteArray());
       } else {
         Bitmap original = BitmapFactory.decodeFile(absolutePathOfImage);
@@ -109,7 +109,7 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
 
         Bitmap out = Bitmap.createScaledBitmap(original, targetWidth, targetHeight, false);
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        original.compress(CompressFormat.JPEG, 70, out);
+        original.compress(Bitmap.CompressFormat.JPEG, 70, out);
         images.add(stream.toByteArray());
       }
     }
