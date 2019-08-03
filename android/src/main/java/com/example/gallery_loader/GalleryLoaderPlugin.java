@@ -92,7 +92,7 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
       String absolutePathOfImage = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA));
       if (targetWidth == 0 || targetHeight == 0) {
         Bitmap original = BitmapFactory.decodeFile(absolutePathOfImage);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream(original);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
         original.compress(Bitmap.CompressFormat.JPEG, 70, stream);
         images.add(stream.toByteArray());
       } else {
@@ -108,8 +108,8 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
          */
 
         Bitmap out = Bitmap.createScaledBitmap(original, targetWidth, targetHeight, false);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream(out);
-        original.compress(Bitmap.CompressFormat.JPEG, 70, stream);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        out.compress(Bitmap.CompressFormat.JPEG, 70, stream);
         images.add(stream.toByteArray());
       }
     }
