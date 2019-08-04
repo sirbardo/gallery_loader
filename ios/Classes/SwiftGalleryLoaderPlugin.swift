@@ -3,11 +3,16 @@ import UIKit
 import Photos
 
 public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
+    
+    private var fetchResult : PHFetchResult<PHAsset>?
+
+
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "gallery_loader", binaryMessenger: registrar.messenger())
         let instance = SwiftGalleryLoaderPlugin()
         registrar.addMethodCallDelegate(instance, channel: channel)
     }
+    
     
     public func handle(_ call: FlutterMethodCall, result: @escaping FlutterResult) {
         if (call.method == "getPlatformVersion") {
@@ -15,42 +20,39 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
         }
         else if (call.method == "getGalleryImages"){
 
-            DispatchQueue.global(qos: .background).async {
+            DispatchQueue.global(qos: .default).async {
             var startingIndex : Int = 0
             var nToRead : Int = 1
             var targetWidth : Int = 0;
             var targetHeight : Int = 0;
+            var newCursor : Bool = false;
             if let args = call.arguments {
                 if let myArgs = args as? [String: Any]{
                     nToRead = myArgs["nToRead"] != nil ? myArgs["nToRead"] as! Int : 1
                     startingIndex = myArgs["startingIndex"] != nil ? myArgs["startingIndex"] as! Int : 0
                     targetWidth = myArgs["targetWidth"] != nil ? myArgs["targetWidth"] as! Int : 0
                     targetHeight = myArgs["targetHeight"] != nil ? myArgs["targetHeight"] as! Int : 0
+                    newCursor = myArgs["newCursor"] != nil ? myArgs["newCursor"] as! Bool : false
                 }
             } else {
                 nToRead = 1;
                 startingIndex = 0;
             }
+                
+                
+                if (newCursor || self.fetchResult == nil){
+                    let fetchOptions = PHFetchOptions()
+                    fetchOptions.sortDescriptors = [NSSortDescriptor(key:"creationDate", ascending: false)]
+                    self.fetchResult = PHAsset.fetchAssets(with: PHAssetMediaType.image, options: fetchOptions)
+                }
             
-            
-            let imgManager = PHImageManager.default()
-            let requestOptions = PHImageRequestOptions()
-            requestOptions.isSynchronous = true
-            let fetchOptions = PHFetchOptions()
-            fetchOptions.sortDescriptors = [NSSortDescriptor(key:"creationDate", ascending: false)]
-            
-            let fetchResult = PHAsset.fetchAssets(with: PHAssetMediaType.image, options: fetchOptions)
+                let imgManager = PHImageManager.default()
+
             var imagesToReturn = [FlutterStandardTypedData]()
-            
             var i = 0
-            
-            var savedLocalIdentifiers = [String]()
-            
             for index in startingIndex...startingIndex+nToRead-1
             {
-                let asset = fetchResult.object(at: index) as PHAsset
-                let localIdentifier = asset.localIdentifier
-                savedLocalIdentifiers.append(localIdentifier)
+                let asset = self.fetchResult!.object(at: index) as PHAsset
                 var size : CGSize;
                 if (targetWidth != 0 && targetHeight != 0){
                     size = CGSize(width: targetWidth, height: targetHeight)
@@ -72,7 +74,6 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                         else {
                             imageData = UIImagePNGRepresentation(image!)
                         }
-                        let guid = ProcessInfo.processInfo.globallyUniqueString;
                         imagesToReturn.append(FlutterStandardTypedData(bytes: imageData!));
                         i += 1
                         if i == (nToRead) {
@@ -84,7 +85,6 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
         }
         else if (call.method == "getNumberOfImages"){
             DispatchQueue.main.async {
-                let imgManager = PHImageManager.default()
                 let requestOptions = PHImageRequestOptions()
                 requestOptions.isSynchronous = true
                 let fetchOptions = PHFetchOptions()
