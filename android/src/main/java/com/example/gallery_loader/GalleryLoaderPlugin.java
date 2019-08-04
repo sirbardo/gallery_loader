@@ -20,12 +20,16 @@ import android.graphics.BitmapFactory;
 import android.graphics.Bitmap;
 import android.os.Environment;
 import android.media.ThumbnailUtils;
+import android.os.AsyncTask;
+import android.os.Handler;
+import android.os.Looper;
 
 /** GalleryLoaderPlugin */
 public class GalleryLoaderPlugin implements MethodCallHandler {
   /** Plugin registration. */
 
   private Activity activity;
+  private Cursor cursor;
 
   public static void registerWith(Registrar registrar) {
     final MethodChannel channel = new MethodChannel(registrar.messenger(), "gallery_loader");
@@ -67,55 +71,77 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
     result.success(images);
   }
 
-  private void getGalleryImages(MethodCall call, Result result) {
-    Stopwatch timer = new Stopwatch();
-    timer.start();
-    int nToRead = call.argument("nToRead");
-    int startingIndex = call.argument("startingIndex");
-    Integer targetWidth = call.argument("targetWidth");
-    Integer targetHeight = call.argument("targetHeight");
-    if (targetWidth == null)
-      targetWidth = 0;
-    if (targetHeight == null)
-      targetHeight = 0;
-
-    ArrayList<byte[]> images = new ArrayList<byte[]>();
-
-    Uri uri = android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-    String[] projection = { MediaStore.MediaColumns.DATA };
-    Cursor cursor = activity.getContentResolver().query(uri, projection, null, null,
-        MediaStore.MediaColumns.DATE_ADDED + "  desc");
-    cursor.moveToPosition(startingIndex - 1);
-    int i = 0;
-    while (i < nToRead && cursor.moveToNext()) {
-      i++;
-      String absolutePathOfImage = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA));
-      if (targetWidth == 0 || targetHeight == 0) {
-        Bitmap original = BitmapFactory.decodeFile(absolutePathOfImage);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        original.compress(Bitmap.CompressFormat.JPEG, 70, stream);
-        images.add(stream.toByteArray());
-      } else {
-        Bitmap original = BitmapFactory.decodeFile(absolutePathOfImage);
-        float originalWidth = original.getWidth();
-        float originalHeight = original.getHeight();
-
-        /*
-         * if (targetWidth > targetHeight) { float scale = originalWidth / targetWidth;
-         * targetHeight = Math.round(((float) targetHeight) * scale); } else { float
-         * scale = originalHeight / targetHeight; targetWidth = Math.round(((float)
-         * targetWidth) * scale); }
-         */
-
-        Bitmap out = Bitmap.createScaledBitmap(original, targetWidth, targetHeight, false);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        out.compress(Bitmap.CompressFormat.JPEG, 70, stream);
-        images.add(stream.toByteArray());
+  private void returnImages(final ArrayList<byte[]> images, final Result result) {
+    new Handler(Looper.getMainLooper()).post(new Runnable() {
+      @Override
+      public void run() {
+        result.success(images);
       }
-    }
-    timer.stop();
-    Log.d("getImages", "Took: " + Long.toString(timer.getElapsedTime()));
-    result.success(images);
+    });
+  }
+
+  private void getGalleryImages(final MethodCall call, final Result result) {
+
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+
+        Stopwatch timer = new Stopwatch();
+        timer.start();
+
+        final int nToRead = call.argument("nToRead");
+        final int startingIndex = call.argument("startingIndex");
+        final Integer targetWidth = call.argument("targetWidth");
+        final Integer targetHeight = call.argument("targetHeight");
+        final Boolean newCursor = call.argument("newCursor");
+
+        final ArrayList<byte[]> images = new ArrayList<byte[]>();
+
+        if (cursor == null || newCursor) {
+          Log.d("getImages", "New cursor");
+          Uri uri = android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+          String[] projection = { MediaStore.MediaColumns.DATA };
+          cursor = activity.getContentResolver().query(uri, projection, null, null,
+              MediaStore.MediaColumns.DATE_ADDED + "  desc");
+        }
+
+        cursor.moveToPosition(startingIndex - 1);
+
+        int i = 0;
+        while (i < nToRead && cursor.moveToNext()) {
+          i++;
+          String absolutePathOfImage = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA));
+          if (targetWidth == 0 || targetHeight == 0 || targetWidth == null || targetHeight == null) {
+            Bitmap original = BitmapFactory.decodeFile(absolutePathOfImage);
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            original.compress(Bitmap.CompressFormat.JPEG, 70, stream);
+            images.add(stream.toByteArray());
+          } else {
+            Bitmap original = BitmapFactory.decodeFile(absolutePathOfImage);
+            float originalWidth = original.getWidth();
+            float originalHeight = original.getHeight();
+
+            /*
+             * if (targetWidth > targetHeight) { float scale = originalWidth / targetWidth;
+             * targetHeight = Math.round(((float) targetHeight) * scale); } else { float
+             * scale = originalHeight / targetHeight; targetWidth = Math.round(((float)
+             * targetWidth) * scale); }
+             */
+
+            Bitmap out = Bitmap.createScaledBitmap(original, targetWidth, targetHeight, false);
+            ByteArrayOutputStream stream = new ByteArrayOutputStream();
+            out.compress(Bitmap.CompressFormat.JPEG, 70, stream);
+            images.add(stream.toByteArray());
+          }
+        }
+        timer.stop();
+        Log.d("getImages", "Took: " + Long.toString(timer.getElapsedTime()));
+
+        returnImages(images, result);
+
+      }
+    }).start();
+
     /*
      * } else { int i = 0; while (i < nToRead && cursor.moveToNext()) { i++;
      * Log.d("Channel", "loading next image"); String absolutePathOfImage =
@@ -129,6 +155,10 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
   @Override
   public void onMethodCall(MethodCall call, Result result) {
 
+    if (call.method.equals("resetCursor")){
+      this.cursor.close();
+      this.cursor = null;
+    }
     if (call.method.equals("getThumbnails")) {
       getThumbnails(call, result);
     } else if (call.method.equals("getNumberOfImages")) {

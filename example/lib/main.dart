@@ -56,7 +56,7 @@ class _MyAppState extends State<MyApp> {
                     itemCount: _totalImages,
                     itemBuilder: (context, index) {
                       return FutureBuilder(
-                          future: GalleryLoader.getThumbnails(
+                          future: GalleryLoader.getGalleryImages(
                               total: 1,
                               startingIndex: index,
                           ),
