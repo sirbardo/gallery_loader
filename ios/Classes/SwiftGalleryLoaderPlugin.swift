@@ -40,7 +40,7 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
             fetchOptions.sortDescriptors = [NSSortDescriptor(key:"creationDate", ascending: false)]
             
             let fetchResult = PHAsset.fetchAssets(with: PHAssetMediaType.image, options: fetchOptions)
-            var imagesToReturn = [String]()
+            var imagesToReturn = [FlutterStandardTypedData]()
             
             var i = 0
             
@@ -59,7 +59,6 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                     size = PHImageManagerMaximumSize
                 }
                 
-                var finalImage : String = "";
                 let imgOptions = PHImageRequestOptions()
                 imgOptions.isNetworkAccessAllowed = true
                 imgOptions.isSynchronous = false
@@ -74,17 +73,11 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                             imageData = UIImagePNGRepresentation(image!)
                         }
                         let guid = ProcessInfo.processInfo.globallyUniqueString;
-                        let tmpFile = String(format: "gallery_loader%@.jpg", guid);
-                        let tmpDirectory = NSTemporaryDirectory();
-                        let tmpPath = (tmpDirectory as NSString).appendingPathComponent(tmpFile);
-                        if(FileManager.default.createFile(atPath: tmpPath, contents: imageData, attributes: [:])) {
-                            imagesToReturn.append(tmpPath);
-                            finalImage = tmpPath
-                                        i += 1
-                                        if i == (nToRead) {
-                                            result(imagesToReturn)
-                                        }
-                                    }
+                        imagesToReturn.append(FlutterStandardTypedData(bytes: imageData!));
+                        i += 1
+                        if i == (nToRead) {
+                          result(imagesToReturn)
+                        }
                     }
                 })
             }}
