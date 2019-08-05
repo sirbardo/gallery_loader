@@ -73,10 +73,12 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                 
                 let imgOptions = PHImageRequestOptions()
                 imgOptions.isNetworkAccessAllowed = true
-                imgOptions.isSynchronous = false
+                imgOptions.isSynchronous = true
                 
+                print("Asking image")
                 imgManager.requestImage(for: asset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: imgOptions, resultHandler:{(image, info) in
                     if image != nil && !(info![PHImageResultIsDegradedKey]! as! Bool) {
+                        print("Found image")
                         var imageData: Data?
                         if let cgImage = image!.cgImage, cgImage.renderingIntent == .defaultIntent {
                             imageData = UIImageJPEGRepresentation(image!, 0.8)
@@ -86,7 +88,8 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                         }
                         imagesToReturn.append(FlutterStandardTypedData(bytes: imageData!));
                         i += 1
-                        if i == (nToRead) {
+                        if i == nToRead || i+startingIndex == self.fetchResult!.count {
+                            print("Returning")
                           result(imagesToReturn)
                         }
                     }
