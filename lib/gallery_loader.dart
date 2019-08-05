@@ -28,17 +28,18 @@ class GalleryLoader {
     await _channel.invokeMethod('resetCursor');
   }
 
-  static Future<List<String>> getThumbnails({
+  static Future<List<Uint8List>> getThumbnails({
     int total: 5,
     int startingIndex: 0,
+    bool newCursor = false,
   }) async {
 
     final images = await _channel
-        .invokeListMethod<String>('getThumbnails', <String, dynamic>{
+        .invokeListMethod<Uint8List>('getThumbnails', <String, dynamic>{
       'nToRead': total,
       'startingIndex': startingIndex,
+      'newCursor': newCursor,
     });
-    print("Thumbnails returned $images");
     return images;
   }
 

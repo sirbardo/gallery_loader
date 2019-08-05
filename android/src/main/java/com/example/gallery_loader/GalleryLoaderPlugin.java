@@ -40,36 +40,67 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
     this.activity = activity;
   }
 
-  private void getThumbnails(MethodCall call, Result result) {
-    Stopwatch timer = new Stopwatch();
-    timer.start();
-    Integer nToRead = call.argument("nToRead");
-    Integer startingIndex = call.argument("startingIndex");
-    if (startingIndex == null)
-      startingIndex = 0;
-    if (nToRead == null)
-      nToRead = 1;
+  private void getThumbnails(final MethodCall call, final Result result) {
 
-    String[] projection = { MediaStore.Images.Thumbnails.DATA };
-    Uri uri = MediaStore.Images.Thumbnails.EXTERNAL_CONTENT_URI;
-    Cursor cursor = MediaStore.Images.Thumbnails.queryMiniThumbnails(activity.getContentResolver(), uri,
-        MediaStore.Images.Thumbnails.MINI_KIND, projection);
-    int i = 0;
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
 
-    if (!cursor.moveToLast())
-      Log.d("getThumbnails", "Found no thumbnails.");
-    ArrayList<String> images = new ArrayList<String>();
+        Stopwatch timer = new Stopwatch();
+        timer.start();
 
-    do {
-      String absolutePathOfImage = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA));
-      images.add(absolutePathOfImage);
-      i += 1;
-    } while (i < nToRead && cursor.moveToPrevious());
+        final int nToRead = call.argument("nToRead");
+        final int startingIndex = call.argument("startingIndex");
+        final Boolean newCursor = call.argument("newCursor");
 
-    timer.stop();
-    Log.d("getThumbnails", "Took: " + Long.toString(timer.getElapsedTime()));
-    result.success(images);
+        final ArrayList<byte[]> images = new ArrayList<byte[]>();
+
+        if (cursor == null || newCursor) {
+          Log.d("getImages", "New cursor");
+          Uri uri = android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+          String[] projection = { MediaStore.MediaColumns.DATA, MediaStore.Images.Media._ID};
+          cursor = activity.getContentResolver().query(uri, projection, null, null,
+              MediaStore.MediaColumns.DATE_ADDED + "  desc");
+        }
+
+        cursor.moveToPosition(startingIndex - 1);
+
+        int i = 0;
+        while (i < nToRead && cursor.moveToNext()) {
+          i++;
+          String id = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
+          Bitmap bmp = MediaStore.Images.Thumbnails.getThumbnail(activity.getContentResolver(), Long.parseLong(id),
+          MediaStore.Images.Thumbnails.MINI_KIND, null);
+
+          if (bmp == null){
+            continue;
+          }
+
+
+          ByteArrayOutputStream stream = new ByteArrayOutputStream();
+          bmp.compress(Bitmap.CompressFormat.JPEG, 90, stream);
+
+          images.add(stream.toByteArray());
+
+        }
+        timer.stop();
+        Log.d("getImages", "Took: " + Long.toString(timer.getElapsedTime()));
+
+        returnImages(images, result);
+
+      }
+    }).start();
+
+    /*
+     * } else { int i = 0; while (i < nToRead && cursor.moveToNext()) { i++;
+     * Log.d("Channel", "loading next image"); String absolutePathOfImage =
+     * cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.MediaColumns.DATA));
+     * images.add(absolutePathOfImage); Log.d("Channel", "Returning: " +
+     * absolutePathOfImage); } Log.d("Channel", "About to return");
+     * result.success(images); }
+     */
   }
+
 
   private void returnImages(final ArrayList<byte[]> images, final Result result) {
     new Handler(Looper.getMainLooper()).post(new Runnable() {
@@ -91,8 +122,8 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
 
         final int nToRead = call.argument("nToRead");
         final int startingIndex = call.argument("startingIndex");
-        final Integer targetWidth = call.argument("targetWidth");
-        final Integer targetHeight = call.argument("targetHeight");
+        Integer targetWidth = call.argument("targetWidth");
+        Integer targetHeight = call.argument("targetHeight");
         final Boolean newCursor = call.argument("newCursor");
 
         final ArrayList<byte[]> images = new ArrayList<byte[]>();
@@ -121,13 +152,18 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
             float originalWidth = original.getWidth();
             float originalHeight = original.getHeight();
 
-            /*
-             * if (targetWidth > targetHeight) { float scale = originalWidth / targetWidth;
-             * targetHeight = Math.round(((float) targetHeight) * scale); } else { float
-             * scale = originalHeight / targetHeight; targetWidth = Math.round(((float)
-             * targetWidth) * scale); }
-             */
 
+            Log.d("getImages", "original width: " + originalWidth + " original height : " + originalHeight);
+
+            if (originalWidth > originalHeight) {
+              // landscape
+              targetHeight = (int) (originalHeight*targetWidth/originalWidth);
+            } else if (originalHeight > originalWidth) {
+              // portrait
+              targetWidth = (int) (originalWidth*targetHeight/originalHeight);
+            } 
+
+            Log.d("getImages", "about to resize with width: " + targetWidth + " and height " + targetHeight);
             Bitmap out = Bitmap.createScaledBitmap(original, targetWidth, targetHeight, false);
             ByteArrayOutputStream stream = new ByteArrayOutputStream();
             out.compress(Bitmap.CompressFormat.JPEG, 70, stream);
@@ -155,7 +191,7 @@ public class GalleryLoaderPlugin implements MethodCallHandler {
   @Override
   public void onMethodCall(MethodCall call, Result result) {
 
-    if (call.method.equals("resetCursor")){
+    if (call.method.equals("resetCursor")) {
       this.cursor.close();
       this.cursor = null;
     }
