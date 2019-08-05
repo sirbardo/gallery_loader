@@ -59,6 +59,8 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
             var i = 0
             for index in startingIndex...startingIndex+nToRead-1
             {
+                if (index > fetchResult?.count)
+                    break
                 let asset = self.fetchResult!.object(at: index) as PHAsset
                 var size : CGSize;
                 if (targetWidth != 0 && targetHeight != 0){
@@ -73,7 +75,7 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                 imgOptions.isSynchronous = false
                 
                 imgManager.requestImage(for: asset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: imgOptions, resultHandler:{(image, info) in
-                    if image != nil && info.PHImageResultIsDegradedKey != "true" {
+                    if image != nil && !(info![PHImageResultIsDegradedKey]! as! Bool) {
                         var imageData: Data?
                         if let cgImage = image!.cgImage, cgImage.renderingIntent == .defaultIntent {
                             imageData = UIImageJPEGRepresentation(image!, 0.8)
