@@ -18,8 +18,10 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
         if (call.method == "getPlatformVersion") {
             result("iOS " + UIDevice.current.systemVersion)
         }
-        else if (call.method == "getGalleryImages"){
+        else if (call.method == "getGalleryImages" || call.method == "getThumbnails"){
 
+            print("Ciao")
+            
             DispatchQueue.global(qos: .default).async {
             var startingIndex : Int = 0
             var nToRead : Int = 1
@@ -39,6 +41,11 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                 startingIndex = 0;
             }
                 
+                
+                if (call.method == "getThumbnails"){
+                    targetHeight = 200
+                    targetWidth = 200
+                }
                 
                 if (newCursor || self.fetchResult == nil){
                     let fetchOptions = PHFetchOptions()
@@ -66,7 +73,7 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
                 imgOptions.isSynchronous = false
                 
                 imgManager.requestImage(for: asset, targetSize: size, contentMode: PHImageContentMode.aspectFit, options: imgOptions, resultHandler:{(image, info) in
-                    if image != nil {
+                    if image != nil && info.PHImageResultIsDegradedKey != "true" {
                         var imageData: Data?
                         if let cgImage = image!.cgImage, cgImage.renderingIntent == .defaultIntent {
                             imageData = UIImageJPEGRepresentation(image!, 0.8)
