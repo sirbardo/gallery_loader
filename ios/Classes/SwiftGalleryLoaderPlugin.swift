@@ -59,8 +59,9 @@ public class SwiftGalleryLoaderPlugin: NSObject, FlutterPlugin {
             var i = 0
             for index in startingIndex...startingIndex+nToRead-1
             {
-                if (index > fetchResult?.count)
+                if (index > self.fetchResult!.count){
                     break
+                }
                 let asset = self.fetchResult!.object(at: index) as PHAsset
                 var size : CGSize;
                 if (targetWidth != 0 && targetHeight != 0){
