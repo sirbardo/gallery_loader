@@ -24,10 +24,6 @@ class GalleryLoader {
     return images;
   }
 
-  static void resetCursor() async{
-    await _channel.invokeMethod('resetCursor');
-  }
-
   static Future<List<Uint8List>> getThumbnails({
     int total: 5,
     int startingIndex: 0,
